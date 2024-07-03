@@ -6,12 +6,13 @@ import sys
 
 # Define LSTM classifier model
 class LSTMClassifier2(nn.Module):
-    def __init__(self, num_sensors, hidden_size, num_gestures, device='cpu'):
+    def __init__(self, num_sensors, hidden_size, window_size, num_gestures, device='cpu'):
         super().__init__()
         self.num_sensors = num_sensors
         self.hidden_size = hidden_size
         self.num_layers = 1 # See later for modifications, requires change in foward pass
         self.num_gestures = num_gestures
+        self.window_size = window_size
 
         # Avoid Dropout on LSTM layer as LSTM are not good at learning multiple things at once
 

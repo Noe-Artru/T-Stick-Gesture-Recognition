@@ -71,6 +71,7 @@ def updateInput(address, *args):
         args = list(args)
 
     fill_dict(input, address, args)
+    # Only save data once the input dictionnary has been filled, and exactly once per input cycle.
     if(input["raw"]["gyro"] != [] and input["raw"]["magn"] != [] and input["raw"]["accl"] != [] and address[-1] == "accl"):	
         add_data()
 
