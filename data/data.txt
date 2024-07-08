@@ -1,4 +1,8 @@
 Test0 -> Pressing (In different contexts)
 Test1 -> Throwing the T-Stick while spinning it along its long axis
-Test2 -> turning the T-Stick upside down, then back
+Test2 -> turning the T-Stick towards fsr
 Test3 -> Fast circle with upright TStick while pressing it
+Test4 -> Flipping 360 perpendicular to long axis
+Test5
+Test6
+Test7 -> Pushing forwards

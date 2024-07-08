@@ -77,7 +77,7 @@ def updateInput(address, *args):
 
 def add_data():
     global X, y
-    X.append([input["raw"]["fsr"], input["instrument"]["brush"], input["raw"]["accl"][0], input["raw"]["accl"][1], input["raw"]["accl"][2], input["raw"]["gyro"][0], input["raw"]["gyro"][1], input["raw"]["gyro"][2], input["raw"]["magn"][0], input["raw"]["magn"][1], input["raw"]["magn"][2]])
+    X.append([input["raw"]["fsr"], input["raw"]["accl"][0], input["raw"]["accl"][1], input["raw"]["accl"][2], input["raw"]["gyro"][0], input["raw"]["gyro"][1], input["raw"]["gyro"][2]])
     if  keyboard.is_pressed(' '):
         y.append(1)
     else:

@@ -9,7 +9,7 @@ import torch
 import keyboard
 import numpy as np
 import time
-import livePlot
+import plotLive
 import keyboard
 import sys
 from LSTM_model2 import LSTMClassifier2
@@ -69,8 +69,9 @@ def fill_dict(input_dict, path, values):
     else:
         fill_dict(input_dict[path[0]], path[1:], values)
         
-
+start = time.time()
 def updateInput(address, *args):
+    global start
     address = address.split("/")[2:]
     if len(args) == 1:
         args = args[0]
@@ -80,33 +81,38 @@ def updateInput(address, *args):
     fill_dict(input, address, args)
     # Only save data once the input dictionnary has been filled, and exactly once per input cycle.
     if(input["raw"]["gyro"] != [] and input["raw"]["magn"] != [] and input["raw"]["accl"] != [] and address[-1] == "accl"):	
-        live_data()
+        live_data() # on average this gets called every 20 miliseconds
 
 
+
+#Latency study: live data needs to run in less than 20 miliseconds.
+# To reduce data manipulation latency (0.1 milisecond on average), we never store more than 4*sequence_length data points
+# # If we want to plot, is adds 7 miliseconds of latency on average (using dynamic plotting techniques)
+# Model inference takes 4 miliseconds on average for 512 hidden_size, 25 sequence_length, 7 input feature
 def live_data():
-    global X, y
-    X.append([input["raw"]["fsr"], input["instrument"]["brush"], input["raw"]["accl"][0], input["raw"]["accl"][1], input["raw"]["accl"][2], input["raw"]["gyro"][0], input["raw"]["gyro"][1], input["raw"]["gyro"][2], input["raw"]["magn"][0], input["raw"]["magn"][1], input["raw"]["magn"][2]])
-    if(len(X) >= 2*sequence_length):
-        X_processed = (X - np.mean(X, axis=0)) / (np.std(X, axis=0) + 1e-8)
-        data = X_processed[-sequence_length:]
+    global X, y, means, stds
+    X.append([input["raw"]["fsr"], input["raw"]["accl"][0], input["raw"]["accl"][1], input["raw"]["accl"][2], input["raw"]["gyro"][0], input["raw"]["gyro"][1], input["raw"]["gyro"][2]])
+    if(len(X) >= 5*sequence_length): #reduce latency by partially storing X
+        X = X[-sequence_length:]
+    if(len(X) >= sequence_length):
+        data = (X[-sequence_length:]-means) / (stds + 1e-8)
         y.append(predict(data).item())
-        frame_skip_count = 6 #number of frames skipped between each plot update -> to negate lag, 5 or 6 is needed
+        frame_skip_count = 3 #number of frames skipped between each plot update -> to negate lag
         if(len(y) > 100 + frame_skip_count):
             y = y[-100:]
-            livePlot.update_plot(y)
+            plotLive.update_plot(y) # takes around 10 miliseconds to update plot
 
-        
 def predict(data):
     data = torch.tensor(data).float().unsqueeze(0).to(device)
     model.eval()
     with torch.no_grad():
-        output = model(data)
+        output = model(data) # model inference takes 3 miliseconds for larger sized model
     return output
 
-gestureNumber = 1
+gestureNumber = 7
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-num_sensors = 11
+num_sensors = 7
 hidden_size = 512
 sequence_length = 25
 model = LSTMClassifier2(
@@ -118,11 +124,12 @@ model = LSTMClassifier2(
 )
 model.to(device)
 state_dict = torch.load("models/gestureRecognition" + str(gestureNumber) + ".pth")
-model.load_state_dict(state_dict)
+model.load_state_dict(state_dict["model_state_dict"])
+means = state_dict["means"]
+stds = state_dict["stds"]
 
 X = []
 y = []
-
 
 scan = OscDataReceive(port=port, address=tStickId + "/*", function=updateInput)
 s.start()
